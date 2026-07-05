@@ -11,6 +11,4 @@ RUN pip install runpod soundfile
 
 COPY handler.py /app/VoxCPM/handler.py
 
-RUN python -c "from voxcpm import VoxCPM; VoxCPM.from_pretrained('openbmb/VoxCPM2')"
-
 CMD ["python", "-u", "/app/VoxCPM/handler.py"]
