@@ -7,7 +7,7 @@ WORKDIR /app
 RUN git clone https://github.com/OpenBMB/VoxCPM.git /app/VoxCPM
 WORKDIR /app/VoxCPM
 RUN pip install -e .
-RUN pip install runpod soundfile
+RUN pip install runpod soundfile transformers==4.38.2
 
 COPY handler.py /app/VoxCPM/handler.py
 
