@@ -6,6 +6,7 @@ import io
 import os
 import tempfile
 import urllib.request
+import subprocess
 
 print("Loading model...")
 model = VoxCPM.from_pretrained("openbmb/VoxCPM2")
@@ -17,15 +18,21 @@ def handler(job):
     ref_audio_url = job_input.get('ref_audio', None)
     
     ref_wav_path = None
-    temp_file = None
+    temp_mp3 = None
+    temp_wav = None
     
     try:
-        # Download reference audio if URL is provided
+        # Download and convert to WAV
         if ref_audio_url and ref_audio_url.startswith('http'):
-            temp_file = tempfile.NamedTemporaryFile(suffix='.mp3', delete=False)
-            urllib.request.urlretrieve(ref_audio_url, temp_file.name)
-            ref_wav_path = temp_file.name
-            print(f"Reference audio downloaded: {ref_wav_path}")
+            temp_mp3 = tempfile.NamedTemporaryFile(suffix='.mp3', delete=False)
+            temp_wav = tempfile.NamedTemporaryFile(suffix='.wav', delete=False)
+            
+            urllib.request.urlretrieve(ref_audio_url, temp_mp3.name)
+            # Convert MP3 to WAV using FFmpeg
+            subprocess.run(["ffmpeg", "-y", "-i", temp_mp3.name, "-ar", "16000", temp_wav.name], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            
+            ref_wav_path = temp_wav.name
+            print(f"Reference audio ready: {ref_wav_path}")
         
         # Generate with or without reference
         if ref_wav_path:
@@ -43,8 +50,10 @@ def handler(job):
         return {"audio_base64": audio_base64}
     
     finally:
-        # Cleanup temp file
-        if temp_file and os.path.exists(temp_file.name):
-            os.unlink(temp_file.name)
+        # Cleanup temp files
+        if temp_mp3 and os.path.exists(temp_mp3.name):
+            os.unlink(temp_mp3.name)
+        if temp_wav and os.path.exists(temp_wav.name):
+            os.unlink(temp_wav.name)
 
 runpod.serverless.start({"handler": handler})
